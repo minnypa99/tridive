@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>tridive 3D Car Configuratior</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+      <style>
+        html, body, #root {
+            margin: 0;
+            padding: 0;
+        }
+
+        #pc-left {
+            width: 85%;
+            height: 73.2vw;
+            max-height: 100vh;
+            max-width: 136.6vh;
+            float: left;
+        }
+
+        #pc-right {
+            width: 15%;
+            height: 73.2vw;
+            max-height: 100vh;
+            max-width: 136.6vh;
+            float: left;
+        }
+
+        .pc-btn {
+            width: 25%;
+            height: 23vh;
+            margin: 1px;
+        }
+
+        #pc-iframe-wrapper-render {
+            position: relative;
+            width: 100%;
+            height: auto;
+            overflow: hidden;
+            padding-top: calc(720 / 1280 * 100%);
+        }
+
+        #pc-iframe-wrapper-render > iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+	#selectStyle {
+            height: 29px;
+            overflow: hidden;
+            width: 150px;
+        }
+
+
+    </style>
+</head>
+<body>
+<div class="App">
+    <div id="pc-left">
+        <div id="pc-iframe-wrapper-render">
+            <iframe id="render" src=""></iframe>
+        </div>
+    </div>
+    <div id="pc-right">
+        <div>
+            <label>Rendering Type</label>
+        </div>
+        <div>
+            <select id="selectStyle" name="streamselect">
+		<option value="RS">RenderStreaming</option>
+		<option value="IMG">Image</option>
+	    </select>
+            <button onclick="SetRender()">선택</button>
+        </div>
+    </div>
+</div>	
+  <script>
+var rs_ok = 'N';
+
+function handleErrors(response) {
+    if (!response.ok) {
+        console.log('handle error');
+        rs_ok = 'N';
+    }
+    return response;
+}
+
+fetch("http://34.120.229.167/checkconn" ).then(function(response){
+        console.log('response ' + response.status);
+        console.log('responseText ' + response.statusText );
+        if( response.status == 200 )
+                rs_ok = 'Y';
+    }).catch(function(error) {
+        console.log(error);
+        rs_ok = 'N';
+    });
+console.log('rs_ok :: ' + rs_ok );
+
+    function SetRender() {
+        let render  = document.getElementById("render");
+        let rendertype = $('#selectStyle').val();
+	if ( rendertype === "RS" && rs_ok === 'Y' ) {
+		render.src = "http://34.120.229.167";
+	}else{
+		//render.src = "http://34.64.76.130:8080/hybrid";
+		render.src = "http://34.149.120.213/hybrid";
+	}
+
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>tridive Image Service</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+<body>
+  <div class="container">
+    <h3>Car Configurrator - send image name</h3>
+    <form class="form-inline">
+      <div class="form-group">
+        <label for="msgForm">Message: </label>
+        <input type="text" class="form-control" id="msgForm">
+      </div>
+      <button type="submit" class="btn btn-primary">Send</button>
+    </form>
+    <div id="chatLogs"></div>
+  </div>
+  <img id="rendered_image" src="http://34.120.229.167/rendered/genesis01.jpeg" style="pointer-events: none; width:100%; height:100%; position:absolute; top: 100; z-index: 10; display: block;" alt="">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+
+var renderedImage = document.getElementById("rendered_image");
+
+  $(function(){
+    // socket.io 서버에 접속한다
+    //var socket = io();
+	  //const URL = "http://34.64.76.130:8080/";
+	  const URL = "http://34.149.120.213";
+          const socket =  io(URL, { transports: ['websocket'] });
+	  //var socket =  io( { transports: ['websocket'] });
+
+    // 서버로 자신의 정보를 전송한다.
+          /*
+    socket.emit("login", {
+      // name: "socketio",
+      name: makeRandomName(),
+      userid: "socketio@gmail.com"
+    });
+    */
+
+
+socket.on("connect", () => {
+  console.log(socket.connected); // true
+        console.log(socket.id);
+        $("#chatLogs").append("<div>Connection - <strong>" + socket.id + "</strong></div>");
+});
+
+    // openPic 메시지 수신 
+    socket.on('openPic', function(url){                
+          //console.log('openPic> url = ' + url);
+          var src = url + '?time=' + new Date().getTime();
+          renderedImage.src = src;
+          renderedImage.style.display = "block";
+
+          $("#chatLogs").append("<div><strong> Rendered Image :: " + src + "</strong></div>");
+    });
+
+    // 서버로부터의 메시지가 수신되면
+    socket.on("login", function(data) {
+      $("#chatLogs").append("<div><strong>" + data + "</strong> has joined</div>");
+    });
+
+    // 서버로부터의 메시지가 수신되면
+    socket.on("s2cchat", function(data) {
+	    $("#chatLogs").append("<div><strong> From Server :: " + data.msg + " </strong></div>");
+    });
+
+     socket.on("s2c", function(data) {
+       	$("#chatLogs").append("<div>" + data.msg + "</div>");
+});
+
+
+    // Send 버튼이 클릭되면
+    $("form").submit(function(e) {
+      e.preventDefault();
+      var $msgForm = $("#msgForm");
+
+      // 서버로 메시지를 전송한다.
+      socket.emit("chat", { msg: $msgForm.val() });
+      $msgForm.val("");
+        //var src = 'http://35.244.219.183/rendered/three-cats.jpeg';
+        // renderedImage.src = src;
+         renderedImage.style.display = "block";
+    });
+
+    function makeRandomName(){
+      var name = "";
+      var possible = "abcdefghijklmnopqrstuvwxyz";
+      for( var i = 0; i < 3; i++ ) {
+        name += possible.charAt(Math.floor(Math.random() * possible.length));
+      }
+      return name;
+    }
+  });
+  </script>
+</body>
+</html>
