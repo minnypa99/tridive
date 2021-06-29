@@ -149,7 +149,7 @@ io.on('connection', function(socket) {
 
 	//console.log('RenderImage from %s, to %s ::  %s', resAttr.workername,resAttr.socketid, message.data);
 	
-       	io.to(resAttr.socketid).emit('openPic', 'http://34.117.251.123/rendered/'+message.data );
+       	io.to(resAttr.socketid).emit('openPic', 'http://34.120.229.167/rendered/'+message.data );
 
        	// "Ack" (acknowledge receipt of) the message
        	message.ack();
