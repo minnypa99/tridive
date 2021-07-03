@@ -5,6 +5,7 @@ var app  = require('express')();
 var server = require('http').createServer(app);
 // http server를 socket.io server로 upgrade한다
 var io = require('socket.io')(server);
+var nsp = io.of("/imagessocket");
 
 var os = require("os");
 var hostname = os.hostname();
@@ -33,8 +34,8 @@ const pubSubClient = new PubSub({grpc});
 
 
 
-app.get('/hybrid', function(req, res) {
-  res.sendFile('/home/autoever/public/hybrid.html');
+app.get('/images', function(req, res) {
+  res.sendFile('/home/autoever/public/images.html');
 });
 
 
@@ -78,7 +79,8 @@ async function publishMessage() {
 
 // connection event handler
 // connection이 수립되면 event handler function의 인자로 socket인 들어온다
-io.on('connection', function(socket) {
+//io.on('connection', function(socket) {
+nsp.on('connection', function(socket) {
         socket.emit('s2c', {msg:'From server :: Hello all!'});
         console.log('Connected - socket.id : ' + socket.id );
 
@@ -91,7 +93,8 @@ io.on('connection', function(socket) {
     socket.userid = data.userid;
 
     // 접속된 모든 클라이언트에게 메시지를 전송한다
-    io.emit('login', data.name );
+    //io.emit('login', data.name );
+    nsp.emit('login', data.name );
   });
 
   // 클라이언트로부터의 메시지가 수신되면
@@ -149,7 +152,9 @@ io.on('connection', function(socket) {
 
 	//console.log('RenderImage from %s, to %s ::  %s', resAttr.workername,resAttr.socketid, message.data);
 	
-       	io.to(resAttr.socketid).emit('openPic', 'http://34.120.229.167/rendered/'+message.data );
+ 	// using custom namespace instead of default 
+       	//io.to(resAttr.socketid).emit('openPic', 'http://34.120.229.167/rendered/'+message.data );
+	nsp.to(resAttr.socketid).emit('openPic', 'http://34.120.229.167/rendered/'+message.data );
 
        	// "Ack" (acknowledge receipt of) the message
        	message.ack();
