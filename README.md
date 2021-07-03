@@ -1,7 +1,7 @@
 # tridive sample code
 ## WebServer VM
-mainserver.js,  index.html. - 첫화면 제공 Web Server/Client <br/>
-socketserver.js  hybrid.html - Hybrid(image service) 서비스 WebSocket Server/Client <br/>
+mainserver.js,  index.html. - 첫화면 제공 Web Server/Client,  Streaming/Image Service 선택 <br/>
+socketserver.js  images.html - image service 를 위한 WebSocket Server/Client <br/>
 
 ## Render Worker VM
 workerWithSynPull.js  -  Req Topic,  Res Topic 으로 요청 Job 처리 <br/>
