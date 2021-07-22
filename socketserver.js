@@ -154,7 +154,10 @@ nsp.on('connection', function(socket) {
 	
  	// using custom namespace instead of default 
        	//io.to(resAttr.socketid).emit('openPic', 'http://34.120.229.167/rendered/'+message.data );
-	nsp.to(resAttr.socketid).emit('openPic', 'http://34.120.229.167/rendered/'+message.data );
+	//nsp.to(resAttr.socketid).emit('openPic', 'http://34.149.210.18/rendered/'+message.data );  // using main lb http
+	//nsp.to(resAttr.socketid).emit('openPic', 'https://tridive.gcpkrce.net/rendered/'+message.data );  // using main lb https
+
+	nsp.to(resAttr.socketid).emit('openPic', '/rendered/'+message.data );  // send only image name 
 
        	// "Ack" (acknowledge receipt of) the message
        	message.ack();

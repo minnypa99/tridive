@@ -79,6 +79,11 @@
     </div>
 </div>	
   <script>
+var req_url = window.location.href;
+var arr = req_url.split("/");
+var req_host = arr[0] + "//" + arr[2];
+
+console.log("url is " + req_host );
 var rs_ok = 'N';
 
 function handleErrors(response) {
@@ -89,7 +94,9 @@ function handleErrors(response) {
     return response;
 }
 
-fetch("http://34.120.229.167/checkconn" ).then(function(response){
+//fetch("http://34.149.210.18/checkconn" ).then(function(response){	// main lb http
+//fetch("https://tridive.gcpkrce.net/checkconn" ).then(function(response){       // main lb https
+fetch(req_host + "/checkconn" ).then(function(response){	// using request url
         console.log('response ' + response.status);
         console.log('responseText ' + response.statusText );
         if( response.status == 200 )
@@ -104,10 +111,14 @@ console.log('rs_ok :: ' + rs_ok );
         let render  = document.getElementById("render");
         let rendertype = $('#selectStyle').val();
 	if ( rendertype === "RS" && rs_ok === 'Y' ) {
-		render.src = "http://34.120.229.167";
+		//render.src = "http://34.149.210.18";    // using main lb http
+		//render.src = "https://tridive.gcpkrce.net"; // using main lb https 
+		render.src = req_host; // using request hostname 
 	}else{
 		//render.src = "http://34.64.76.130:8080/hybrid";
-		render.src = "http://34.120.229.167/images";
+		//render.src = "http://34.149.210.18/images";     // using main lb http
+		//render.src = "https://tridive.gcpkrce.net/images"; // using main lb https
+		render.src = req_host + "/images"; 	// using request hostname
 	}
 
     }
