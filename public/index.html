@@ -84,7 +84,8 @@ var arr = req_url.split("/");
 var req_host = arr[0] + "//" + arr[2];
 
 console.log("url is " + req_host );
-var rs_ok = 'N';
+var preemptible_ok = 'N';
+var standard_ok = 'N';
 
 function handleErrors(response) {
     if (!response.ok) {
@@ -96,24 +97,36 @@ function handleErrors(response) {
 
 //fetch("http://34.149.210.18/checkconn" ).then(function(response){	// main lb http
 //fetch("https://tridive.gcpkrce.net/checkconn" ).then(function(response){       // main lb https
-fetch(req_host + "/checkconn" ).then(function(response){	// using request url
-        console.log('response ' + response.status);
+fetch(req_host + "/preemptible/checkconn" ).then(function(response){	// using request url
+        console.log('preemptible response ' + response.status);
         console.log('responseText ' + response.statusText );
         if( response.status == 200 )
-                rs_ok = 'Y';
+                preemptible_ok = 'Y';
     }).catch(function(error) {
         console.log(error);
-        rs_ok = 'N';
+        preemptible_ok = 'N';
     });
-console.log('rs_ok :: ' + rs_ok );
+
+fetch(req_host + "/standard/checkconn" ).then(function(response){    // using request url
+        console.log('standard response ' + response.status);
+        console.log('responseText ' + response.statusText );
+        if( response.status == 200 )
+                standard_ok = 'Y';
+    }).catch(function(error) {
+        console.log(error);
+        standard_ok = 'N';
+    });
+
 
     function SetRender() {
         let render  = document.getElementById("render");
         let rendertype = $('#selectStyle').val();
-	if ( rendertype === "RS" && rs_ok === 'Y' ) {
-		//render.src = "http://34.149.210.18";    // using main lb http
-		//render.src = "https://tridive.gcpkrce.net"; // using main lb https 
-		render.src = req_host; // using request hostname 
+	if ( rendertype === "RS"  ) {
+		if( preemptible_ok === 'Y' )	render.src = req_host + '/preemptible/'; // using request hostname 
+		else{
+			if( standard_ok === 'Y' )  render.src = req_host + '/standard/';  
+			else render.src = req_host + "/images";
+		}
 	}else{
 		//render.src = "http://34.64.76.130:8080/hybrid";
 		//render.src = "http://34.149.210.18/images";     // using main lb http
