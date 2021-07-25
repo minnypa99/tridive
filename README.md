@@ -33,15 +33,21 @@ workerWithSynPull.js  -  Req Topic,  Res Topic 으로 요청 Job 처리하는 �
 public/scripts/app.js  -  Render Streaming 클라이언트 로직 <br/>
 - Idle time check 해서 사용자 이벤트가 없는 경우 Socket close <br/>
 
-public/scripts/video-player.js
-- stun/turn 서버 리스트 관리
-- 예) urls: ['stun:34.64.71.200:3478']
+public/scripts/video-player.js <br/>
+- stun/turn 서버 리스트 관리 <br/>
+- 예) urls: ['stun:34.64.71.200:3478'] <br/>
 
-public/scripts/signaling.js
-- websocket connection url 을 만들때, preemptible 과 standard 를 구분하기 위해서 pathname 을 붙임
-- var websocketUrl = "wss://" + location.host + location.pathname;
+public/scripts/signaling.js <br/>
+- websocket connection url 을 만들때, preemptible 과 standard 를 구분하기 위해서 pathname 을 붙임 <br/>
+- var websocketUrl = "wss://" + location.host + location.pathname; <br/>
 
-server.ts - 서버 로직, Health Check Function 
-- 
-websocket.ts  -  서버 로직,  WebSocket 및 WebRTC 세션 체크
+server.ts - 서버 로직, Health Check Function  <br/>
+- sessionid 폴더 설정 ( 예 - folderPath = 'C:/connections' ) <br/>
+- health check function 구현 ( e.g.   app.get('/checkconn', (req, res) ) <br/>
+
+websocket.ts  -  서버 로직,  WebSocket 및 WebRTC 세션 체크 <br/>
+- 서버가 시작할때, 모든 세션 파일을 정리
+- webSocket Close 될때, 모든 세션 파일을 정리
+- webrtc connect 일때, 세션파일 저장
+- webrtc disconnect 일때, 세션파일 정리
 
