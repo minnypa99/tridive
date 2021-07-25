@@ -56,3 +56,37 @@ websocket.ts  -  서버 로직,  WebSocket 및 WebRTC 세션 체크 <br/>
 - webrtc connect 일때, 세션파일 저장
 - webrtc disconnect 일때, 세션파일 정리
 
+## iceServers list
+iceServers in video-player.js <br/>
+config.iceServers = [{
+    urls: ['stun:34.64.71.200:3478']
+    }, {
+    urls: ['stun:34.64.217.78:3478']
+    }, {
+    urls: ['turn:34.64.71.200:3478?transport=udp'], 
+    username: 'webrtc', 
+    credential: 'webrtc'
+    }, {
+    urls: ['turn:34.64.217.78:3478?transport=udp'], 
+    username: 'webrtc', 
+    credential: 'webrtc'
+  }
+];
+
+iceServers in Unity <br/>
+; TURN Server 리스트의 전체 갯수
+TURN_Server_Count = 2
+
+; Dedicated TURN Server 정보
+TURN_Server_Url_0 = turn:34.64.71.200:3478?transport=udp
+TURN_Server_UserName_0 = webrtc
+TURN_Server_Credential_0 = webrtc
+TURN_Server_CredentialType_0 = Password
+
+TURN_Server_Url_1 = turn:34.64.217.78:3478?transport=udp
+TURN_Server_UserName_1 = webrtc
+TURN_Server_Credential_1 = webrtc
+TURN_Server_CredentialType_1 = Password
+
+
+
