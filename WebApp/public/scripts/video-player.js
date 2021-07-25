@@ -46,11 +46,20 @@ export class VideoPlayer {
       config = {};
     }
     config.sdpSemantics = 'unified-plan';
-      config.iceServers = [{urls: ['stun:34.64.71.200:3478']},
-				{ urls: ['turn:34.64.71.200:3478?transport=udp'],
-			    	username: 'webrtc',
-				credential: 'webrtc'}
-			];
+	config.iceServers = [{
+	    urls: ['stun:34.64.71.200:3478']
+	    }, {
+	    urls: ['stun:34.64.217.78:3478']
+	    }, {
+	    urls: ['turn:34.64.71.200:3478?transport=udp'], 
+	    username: 'webrtc', 
+	    credential: 'webrtc'
+	    }, {
+	    urls: ['turn:34.64.217.78:3478?transport=udp'], 
+	    username: 'webrtc', 
+	    credential: 'webrtc'
+	  }
+	];  
     return config;
   }
 
