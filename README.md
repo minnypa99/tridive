@@ -20,6 +20,11 @@ socketserver.js  [lb_ip/domain]/images 요청시 public/images.html 제공 <br/>
 - Unity 서버에서 이미지 생성 결과를 수신하면 uri 를 조립하여 클라이언트에게 브로드캐스트 <br/>
 - nsp.to(resAttr.socketid).emit('openPic', '/rendered/'+message.data ) <br/>
 
+public/images.html   images cluster 와 webSocket 통신을 위한 클라이언트 <br/>
+- socket 연결을 위해서 namespace 기반의 url 사용 ( const imagesURL = req_host + "/imagessocket" )
+- 이미지 요청을 웹소켓으로 송신   ( socket.emit("chat", { msg: data }) )
+- 생성된 이미지 url 을 웹소켓으로 수신 ( socket.on("openPic", function(imagepath) )
+
 ## Render Worker VM
 workerWithSynPull.js  -  Req Topic,  Res Topic 으로 요청 Job 처리하는 샘플, Unity 에서 처리하는 C# 코드로 대체해야함 <br/>
 - 메시지 송수신을 위해서 pub/sub topic 사용  ( RenderRequest,   RenderReceived ) <br/>
