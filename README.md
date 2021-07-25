@@ -7,6 +7,7 @@ public/index.html 서비스 기본화면 health check 결과를 바탕으로 Str
 - if preemptible_ok = 'y' then goto [lb_ip/domain]/preemptible/  ( preemptible cluster ) <br/>
   else if standard_ok = 'y' then goto [lb_ip/domain]/standard/  ( standard cluster ) <br/>
   else goto [lb_ip/domain]/images ( images cluster ) <br/>
+
 socketserver.js  public/images.html - image service 를 위한 WebSocket Server/Client <br/>
 
 ## Render Worker VM
