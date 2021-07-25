@@ -34,5 +34,14 @@ public/scripts/app.js  -  Render Streaming 클라이언트 로직 <br/>
 - Idle time check 해서 사용자 이벤트가 없는 경우 Socket close <br/>
 
 public/scripts/video-player.js
-websocket.ts  -  서버 로직,  WebSocket 및 WebRTC 세션 체크
+- stun/turn 서버 리스트 관리
+- 예) urls: ['stun:34.64.71.200:3478']
+
+public/scripts/signaling.js
+- websocket connection url 을 만들때, preemptible 과 standard 를 구분하기 위해서 pathname 을 붙임
+- var websocketUrl = "wss://" + location.host + location.pathname;
+
 server.ts - 서버 로직, Health Check Function 
+- 
+websocket.ts  -  서버 로직,  WebSocket 및 WebRTC 세션 체크
+
