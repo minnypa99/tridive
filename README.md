@@ -88,5 +88,7 @@ TURN_Server_UserName_1 = webrtc
 TURN_Server_Credential_1 = webrtc
 TURN_Server_CredentialType_1 = Password
 
-
+## iceServers list
+/etc/turnserver.conf <br/>
+turn_startup.sh VM 기동시에 external ip 를 체크하여 turnserver.conf 에 설정 <br/>
 
