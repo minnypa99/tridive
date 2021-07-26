@@ -34,7 +34,22 @@ var push_attr = {};
         allowExcessMessages: false
   };
 
+// The ID of your GCS bucket
+const bucketName = 'tridive_render_bucket_1';
 
+// The path to your file to upload
+const filePath = '/home/autoever/images/';
+
+// The new ID for your GCS file
+const destPath = 'rendered/';
+
+// Imports the Google Cloud client library
+const {Storage} = require('@google-cloud/storage');
+const fs = require('fs');
+const path = require('path');
+
+// Creates a client
+const storage = new Storage();
 
 async function publishMessage(push_data, push_attr) {
   // Publishes the message as a string, e.g. "Hello, world!" or JSON.stringify(someObject)
@@ -82,6 +97,21 @@ async function syncPull(){
   const resMessage = response.receivedMessages[0];
 
 console.log('message.data ' + resMessage.message.data );
+	  
+      var name ="";
+      var possible = "abcdefghijklmnopqrstuvwxyz";
+      for( var i = 0; i < 3; i++ ) {
+        name += possible.charAt(Math.floor(Math.random() * possible.length));
+      }
+
+        name += resMessage.message.attributes.socketid;
+        fs.writeFileSync( path.join(filePath, name), resMessage.message.attributes.socketid);
+
+        await storage.bucket(bucketName).upload(filePath + name, {
+                destination: destPath + name,
+        });
+        console.log(`${filePath} uploaded to ${bucketName}`);	  
+  
   worker(resMessage);
 
   const ackRequest = {
