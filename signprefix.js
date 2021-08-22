@@ -8,6 +8,8 @@ var urljoin = require('url-join');
 // Defining port number 
 const PORT =8000;
 
+//const keyName = process.env.CDN_SIGNING_KEYNAME
+//const keyVal = process.env.CDN_SIGNING_KEYVAL
 const keyName = 'cb-sign-key'
 const keyVal = 'WvvOqKDciiKZMYws65UdKw==';
 
