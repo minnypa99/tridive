@@ -1,4 +1,4 @@
-var app  = require('express')();
+ar app  = require('express')();
 var server = require('http').createServer(app);
 var crypto = require('crypto');
 var moment = require('moment');
@@ -7,10 +7,13 @@ var urljoin = require('url-join');
 
 const PORT =8000;
 
+//const keyName = process.env.CDN_SIGNING_KEYNAME
+//const keyVal = process.env.CDN_SIGNING_KEYVAL
+
 const keyName = 'cb-sign-key'
 const keyVal = 'WvvOqKDciiKZMYws65UdKw==';
 
-const keyBytes = Buffer.from('WvvOqKDciiKZMYws65UdKw==', 'base64')
+const keyBytes = Buffer.from(keyVal, 'base64')
 
 app.get('/signurl', function(req, res) {
 
