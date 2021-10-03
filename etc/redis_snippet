@@ -1,3 +1,12 @@
+// get VM metadata
+curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/
+curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip
+
+// restart VM Instance
+ POST https://www.googleapis.com/compute/v1/projects/PROJECT_ID/zones/ZONE/instances/VM_NAME/reset
+ 
+ 
+
 var timestamp = new Date();
 var milliseconds = timestamp.getTime();
 
@@ -43,6 +52,16 @@ var ext_ip = '';
 
 
 ///////////// change to READY
+var options={
+	host: 'metadata',
+	path: '/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip',
+	method: 'GET',
+  headers: {
+    'Metadata-Flavor': 'Google'
+  }
+}
+
+
 const req = http.request(options, res => {
   console.log(`statusCode: ${res.statusCode}`)
 
