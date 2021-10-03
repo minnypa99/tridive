@@ -3,51 +3,35 @@ curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/
 curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip
 
 // restart VM Instance
- POST https://www.googleapis.com/compute/v1/projects/PROJECT_ID/zones/ZONE/instances/VM_NAME/reset
- 
- 
+ POST https://www.googleapis.com/compute/v1/projects/605373481786/zones/us-central1-b/instances/instance-win-gpu/reset
+ https://cloud.google.com/compute/docs/reference/rest/v1/instances/reset // api 가이드
 
-var timestamp = new Date();
-var milliseconds = timestamp.getTime();
-
-////////////////////  url parsing
-const url = require('url');
-
-function count(req, res, redis) {
-  var parsedObj = url.parse(req.url, true);
-      
-        redis.pipeline()
-        .scard('activeQ:' + parsedObj.query.ctx)
-      .zcard('waitingQ:' + parsedObj.query.ctx)
-        .exec(function(err, result){       
-    if (err) {
-      res.statusCode = 404;
-      res.end();
-      return;
-    }
-    //log.debug('result: ', result);
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify(result));
-  });
-}
 
 
 /////////////// LUA Scripts
 const http = require('http');
-
+const url = require('url');
 const redishost = "10.32.63.19"
 const redisport = 6379
 const redis = require('redis');
 const client = redis.createClient(redisport, redishost);
 
+var ext_ip = '';
+var vm_name = '';
+var zone_path = '';
+var project_id = '';
+var zone = '';
+var vm_info = '';
+var timestamp = new Date();
+var milliseconds = timestamp.getTime();
 
-var ready = 'return redis.call("ZADD", KEYS[1], ARGV[1], ARGV[2])' ;
+var ready = 'if redis.call("ZADD", KEYS[1], ARGV[1], ARGV[2]) >= 0 then return redis.call("HSET", KEYS[2], ARGV[2], ARGV[3]) else return nil end'  ;
 
 var reserve = 'local ip_arr = redis.call("ZPOPMIN", KEYS[1]) if table.getn(ip_arr) > 1 then local ip = table.remove(ip_arr, 1) if redis.call("ZADD", KEYS[2], ARGV[1], ip) == 1 then return ip else return nil end else return nil end';
 
 var inuse = 'if redis.call("ZREM", KEYS[1], ARGV[2]) == 1 then return redis.call("ZADD", KEYS[2], ARGV[1], ARGV[2]) else return nil end';
 var free = 'if redis.call("ZREM", KEYS[1], ARGV[2]) == 1 then return redis.call("ZADD", KEYS[2], ARGV[1], ARGV[2]) else return nil end';
+var refresh = 'return redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", ARGV[1])';
 var ext_ip = '';
 
 
@@ -61,95 +45,190 @@ var options={
   }
 }
 
+var options_name={
+	host: 'metadata',
+	path: '/computeMetadata/v1/instance/name',
+	method: 'GET',
+  headers: {
+    'Metadata-Flavor': 'Google'
+  }
+}
 
-const req = http.request(options, res => {
-  console.log(`statusCode: ${res.statusCode}`)
+var options_zone={
+	host: 'metadata',
+	path: '/computeMetadata/v1/instance/zone',
+	method: 'GET',
+  headers: {
+    'Metadata-Flavor': 'Google'
+  }
+}
 
-  res.on('data', function(d){
-ext_ip += d;
+////  code snipet in constructor
 
-  });
 
-  res.on('end', function(){
-    console.log(ext_ip);
+http.get(options, function(res) {
+  res.on('data', function(chunk) { ext_ip += chunk; });
+  res.on('end', function(){ 
+	console.log('ext_ip = ' + ext_ip );
+	http.get(options_name, function(res) {
+  	  res.on('data', function(chunk) { vm_name += chunk; });
+  	  res.on('end', function(){ 
+		console.log('vm_name = ' + vm_name ); 
+		http.get(options_zone, function(res) {
+		  res.on('data', function(chunk) { zone_path += chunk; });
+		  res.on('end', function(){
+		  	var zone_arr = zone_path.split("/");
+			project_id = zone_arr[1];
+			zone = zone_arr[3];
+			console.log( 'project id is ' + project_id + ', zone is ' + zone );
+			vm_info = project_id + ',' + zone + ',' + vm_name;
+
+    			client.eval(
+        			ready, //lua source code
+        			2, // one "key" to pass
+        			"ready", // key of sortedset
+				"vminfo", // key of hash set
+        			milliseconds, // ARGV[1] score by timestamp
+        			ext_ip, // ARGV[2] external ip address
+				vm_info, // ARGV[3] proejct_id + zone + vm_name
+        			function(err, res) {
+            			  if( err || res == null){
+              			    console.log('ready err ' + err );
+              			    // return playImg
+            			  }else{
+               			    console.log('ready insert reply ::' + res );
+            			  }
+        			}
+      			);
+		  });
+		});
+	  });
+	});
+  });
+});
+
+
+  ///////// 21-10-01 check no-response vms in reserve state - REFRESH
+  app.get( '/refresh', (req, res) => {
 
     client.eval(
-        ready, //lua source code
+        refresh, //lua source code
         1, // one "key" to pass
-        "ready", // key of sortedset
-        milliseconds, // ARGV[1] - e.g. what field to use
-        ext_ip, // ARGV[2] - e.g. what value to set if present.
-        function(err, res) {
-            if( err ){
-              console.log('ready err ' + err );
-              // return playImg
+        "reserve", // key of sortedset
+        milliseconds - 100000, // ARGV[1] - timestamp 100sec ago
+        function(err, result) {
+            if( err || result == null){
+              console.log('get reserve err ' + err );
+		res.status(500).send('Fail to refresh VMs');
             }else{
-               console.log('reply is ::' + res );
+               console.log('target in reserve are ::' + result );
+		const ip_arr = result.toString().split(",");
+
+		client.eval(
+		   refresh,
+		   1,
+		   "inuse",
+		   milliseconds - 10800000,  // timestamp 3hours ago
+		   function(err, result1){
+		  	if( err || result1 == null ) {
+			   console.log('get inuse err ' + err);
+			   res.status(500).send('Fail to refresh VMs - inuse');
+			}else{
+			   console.log('target in inuse are :: ' + result1);
+			   const ip_arr1 = result1.toString().split(",");
+			   
+			   const target_arr = ip_arr.concat(ip_arr1);
+
+			   target_arr.forEach(function(element, index){
+				console.log(index + ' ' + element );
+				// call VM delete function
+				// if success then remove IP from reserver, else move IP to garbage
+				//client.zrem("reserve", element );
+				//client.zadd("garbage", element );
+				//client.hdel("vminfo", element );
+			   });
+
+			   res.send('Success');
+            		}
+        	    }
+      		);
+	    }
+	});
+
+  });
+
+
+
+
+  ////////// 21-10-01 pick a vm to reserve queue - RESERVE
+  app.get( '/reserve', (req, res) => {
+	
+    client.eval(
+        reserve, //lua source code
+        2, // one "key" to pass
+	"ready", // key of sortedset
+        "reserve", // key of sortedset
+        milliseconds, // ARGV[1] - timestamp 100sec ago
+        function(err, result) {
+            if( err || result == null ){
+              console.log('reserve err ' + err );
+		res.status(500).send('Fail to reserve VM');
+            }else{
+               console.log('reserve ip ::' + result );
+		res.send(result.toString());
             }
         }
       );
 
-  });
-
-});
-
-req.on('error', error => {
-  console.error(error)
-});
-
-req.end();
+  });
 
 
-//////////////////. Change to RESERVE
-client.eval(
-    reserve, //lua source code
-    2, // two "key" to pass
-    "ready", // first key of sortedset
-    "reserve", // second key
-    milliseconds, // score for reserver set
-    function(err, res) {
-      if( err || res == null || res.length <1){
-        console.log('ready err ' + err );
-        // return playImg
-      }else{
-        console.log('ip address is :: ' + res );
-      }
-    }
-  );
-  
-/////////////////. change to INUSE
-client.eval(
-    inuse, //lua source code
-    2, // one "key" to pass
-    "reserve", // key of sortedset
-    "inuse", // second key
-    milliseconds, // score for reserver set
-    "10.10.10.10", // ip address
-    function(err, res) {
-      if( err || res == null || res != 1){
-      console.log('ready err ' + err );
-      // return playImg
-      }else{
-      console.log('reply is :: ' + res );
-      }
-    }
-  );
+
+  ///////////// 21-10-01 change vm status to inuse - INUSE
+  app.get( '/inuse', (req, res) => {
+	var parsedObj = url.parse(req.url, true);  //parsedObj.query.ip
+    client.eval(
+        inuse, //lua source code
+        2, // one "key" to pass
+	"reserve", // key of sortedset
+        "inuse", // key of sortedset
+        milliseconds, // ARGV[1] - timestamp 
+	parsedObj.query.ip,  // ARGV[2] ip address in query string
+        function(err, result) {
+            if( err || result == null || parseInt(result) < 1 ){
+              console.log('inuse err ' + err );
+		res.status(500).send('Fail to allocate VM');
+            }else{
+               console.log('inuse result ::' + parseInt(result) );
+		res.send('Success');
+            }
+        }
+      );
+
+  });
 
 
-////////////  FREE IP address 
-client.eval(
-    free, //lua source code
-    2, // one "key" to pass
-    "inuse", // key of sortedset
-    "ready", // second key
-    milliseconds, // score for ready set
-    "10.10.10.10", // ip address
-    function(err, res) {
-      if( err || res == null || res != 1){
-          console.log('ready err ' + err );
-      // return playImg
-      }else{
-          console.log('reply is :: ' + res );
-      }
-    }
-  );
+
+  ///////////// 21-10-01 change vm status to ready - FREE
+  app.get( '/free', (req, res) => {
+	var parsedObj = url.parse(req.url, true);  //parsedObj.query.ip
+    client.eval(
+        free, //lua source code
+        2, // one "key" to pass
+	"inuse", // key of sortedset
+        "ready", // key of sortedset
+        milliseconds, // ARGV[1] - timestamp 
+	parsedObj.query.ip,  // ARGV[2] ip address in query string
+        function(err, result) {
+            if( err || result == null || parseInt(result) < 1 ){
+              console.log('inuse err ' + err );
+		res.status(500).send('Fail to free VM');
+            }else{
+               console.log('free result ::' + parseInt(result) );
+		res.send('Success');
+            }
+        }
+      );
+
+  });
+
