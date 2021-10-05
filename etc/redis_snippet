@@ -1,6 +1,7 @@
 // get VM metadata
 curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/
 curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip
+curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/ip
 
 // restart VM Instance
  POST https://www.googleapis.com/compute/v1/projects/605373481786/zones/us-central1-b/instances/instance-win-gpu/reset
