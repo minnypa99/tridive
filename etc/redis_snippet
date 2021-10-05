@@ -1,3 +1,82 @@
+
+// get VM metadata
+curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/
+curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip
+curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/ip
+
+// restart VM Instance
+ POST https://www.googleapis.com/compute/v1/projects/605373481786/zones/us-central1-b/instances/instance-win-gpu/reset
+ https://cloud.google.com/compute/docs/reference/rest/v1/instances/reset // api 가이드
+
+
+
+/////////////// LUA Scripts
+const http = require('http');
+const url = require('url');
+const redishost = "10.32.63.19"
+const redisport = 6379
+const redis = require('redis');
+const client = redis.createClient(redisport, redishost);
+
+var int_ip = '';
+var ext_ip = '';
+var vm_name = '';
+var zone_path = '';
+var project_id = '';
+var zone = '';
+var vm_info = '';
+var timestamp = new Date();
+var milliseconds = timestamp.getTime();
+
+var ready = 'if redis.call("ZADD", KEYS[1], ARGV[1], ARGV[2]) >= 0 then return redis.call("HSET", KEYS[2], ARGV[2], ARGV[3]) else return nil end'  ;
+
+var reserve = 'local ip_arr = redis.call("ZPOPMIN", KEYS[1]) if table.getn(ip_arr) > 1 then local ip = table.remove(ip_arr, 1) if redis.call("ZADD", KEYS[2], ARGV[1], ip) == 1 then return ip else return nil end else return nil end';
+
+var inuse = 'if redis.call("ZREM", KEYS[1], ARGV[2]) == 1 then return redis.call("ZADD", KEYS[2], ARGV[1], ARGV[2]) else return nil end';
+var free = 'if redis.call("ZREM", KEYS[1], ARGV[2]) == 1 then return redis.call("ZADD", KEYS[2], ARGV[1], ARGV[2]) else return nil end';
+var refresh = 'return redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", ARGV[1])';
+var ext_ip = '';
+
+
+///////////// change to READY
+var options={
+	host: 'metadata',
+	path: '/computeMetadata/v1/instance/network-interfaces/0/external-ip',
+	method: 'GET',
+  headers: {
+    'Metadata-Flavor': 'Google'
+  }
+}
+
+var options_extip={
+	host: 'metadata',
+	path: '/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip',
+	method: 'GET',
+  headers: {
+    'Metadata-Flavor': 'Google'
+  }
+}
+
+var options_name={
+	host: 'metadata',
+	path: '/computeMetadata/v1/instance/name',
+	method: 'GET',
+  headers: {
+    'Metadata-Flavor': 'Google'
+  }
+}
+
+var options_zone={
+	host: 'metadata',
+	path: '/computeMetadata/v1/instance/zone',
+	method: 'GET',
+  headers: {
+    'Metadata-Flavor': 'Google'
+  }
+}
+
+////  code snipet in constructor
+
 http.get(options, function(res) {
   res.on('data', function(chunk) { int_ip += chunk; });
   res.on('end', function() {
@@ -38,120 +117,6 @@ http.get(options, function(res) {
 				);
 			  });
 			});
-		  });
-		});
-	  });
-	});
-  });
-});
-
-
-
-
-
-// get VM metadata
-curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/
-curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip
-curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/ip
-
-// restart VM Instance
- POST https://www.googleapis.com/compute/v1/projects/605373481786/zones/us-central1-b/instances/instance-win-gpu/reset
- https://cloud.google.com/compute/docs/reference/rest/v1/instances/reset // api 가이드
-
-
-
-/////////////// LUA Scripts
-const http = require('http');
-const url = require('url');
-const redishost = "10.32.63.19"
-const redisport = 6379
-const redis = require('redis');
-const client = redis.createClient(redisport, redishost);
-
-var ext_ip = '';
-var vm_name = '';
-var zone_path = '';
-var project_id = '';
-var zone = '';
-var vm_info = '';
-var timestamp = new Date();
-var milliseconds = timestamp.getTime();
-
-var ready = 'if redis.call("ZADD", KEYS[1], ARGV[1], ARGV[2]) >= 0 then return redis.call("HSET", KEYS[2], ARGV[2], ARGV[3]) else return nil end'  ;
-
-var reserve = 'local ip_arr = redis.call("ZPOPMIN", KEYS[1]) if table.getn(ip_arr) > 1 then local ip = table.remove(ip_arr, 1) if redis.call("ZADD", KEYS[2], ARGV[1], ip) == 1 then return ip else return nil end else return nil end';
-
-var inuse = 'if redis.call("ZREM", KEYS[1], ARGV[2]) == 1 then return redis.call("ZADD", KEYS[2], ARGV[1], ARGV[2]) else return nil end';
-var free = 'if redis.call("ZREM", KEYS[1], ARGV[2]) == 1 then return redis.call("ZADD", KEYS[2], ARGV[1], ARGV[2]) else return nil end';
-var refresh = 'return redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", ARGV[1])';
-var ext_ip = '';
-
-
-///////////// change to READY
-var options={
-	host: 'metadata',
-	path: '/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip',
-	method: 'GET',
-  headers: {
-    'Metadata-Flavor': 'Google'
-  }
-}
-
-var options_name={
-	host: 'metadata',
-	path: '/computeMetadata/v1/instance/name',
-	method: 'GET',
-  headers: {
-    'Metadata-Flavor': 'Google'
-  }
-}
-
-var options_zone={
-	host: 'metadata',
-	path: '/computeMetadata/v1/instance/zone',
-	method: 'GET',
-  headers: {
-    'Metadata-Flavor': 'Google'
-  }
-}
-
-////  code snipet in constructor
-
-
-http.get(options, function(res) {
-  res.on('data', function(chunk) { ext_ip += chunk; });
-  res.on('end', function(){ 
-	console.log('ext_ip = ' + ext_ip );
-	http.get(options_name, function(res) {
-  	  res.on('data', function(chunk) { vm_name += chunk; });
-  	  res.on('end', function(){ 
-		console.log('vm_name = ' + vm_name ); 
-		http.get(options_zone, function(res) {
-		  res.on('data', function(chunk) { zone_path += chunk; });
-		  res.on('end', function(){
-		  	var zone_arr = zone_path.split("/");
-			project_id = zone_arr[1];
-			zone = zone_arr[3];
-			console.log( 'project id is ' + project_id + ', zone is ' + zone );
-			vm_info = project_id + ',' + zone + ',' + vm_name;
-
-    			client.eval(
-        			ready, //lua source code
-        			2, // one "key" to pass
-        			"ready", // key of sortedset
-				"vminfo", // key of hash set
-        			milliseconds, // ARGV[1] score by timestamp
-        			ext_ip, // ARGV[2] external ip address
-				vm_info, // ARGV[3] proejct_id + zone + vm_name
-        			function(err, res) {
-            			  if( err || res == null){
-              			    console.log('ready err ' + err );
-              			    // return playImg
-            			  }else{
-               			    console.log('ready insert reply ::' + res );
-            			  }
-        			}
-      			);
 		  });
 		});
 	  });
