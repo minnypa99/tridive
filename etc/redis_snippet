@@ -97,7 +97,9 @@ http.get(options, function(res) {
 				zone = zone_arr[3];
 				console.log( 'project id is ' + project_id + ', zone is ' + zone );
 				vm_info = ext_ip + ',' + project_id + ',' + zone + ',' + vm_name;
-
+				
+				timestamp = new Date();
+				milliseconds = timestamp.getTime();
 				client.eval(
 					ready, //lua source code
 					2, // one "key" to pass
@@ -179,7 +181,8 @@ http.get(options, function(res) {
 
   ////////// 21-10-01 pick a vm to reserve queue - RESERVE
   app.get( '/reserve', (req, res) => {
-	
+	timestamp = new Date();
+	milliseconds = timestamp.getTime();	
     client.eval(
         reserve, //lua source code
         2, // one "key" to pass
@@ -203,6 +206,8 @@ http.get(options, function(res) {
 
   ///////////// 21-10-01 change vm status to inuse - INUSE
   app.get( '/inuse', (req, res) => {
+  	timestamp = new Date();
+	milliseconds = timestamp.getTime();
 	var parsedObj = url.parse(req.url, true);  //parsedObj.query.ip
     client.eval(
         inuse, //lua source code
@@ -228,6 +233,8 @@ http.get(options, function(res) {
 
   ///////////// 21-10-01 change vm status to ready - FREE
   app.get( '/free', (req, res) => {
+  	timestamp = new Date();
+	milliseconds = timestamp.getTime();
 	var parsedObj = url.parse(req.url, true);  //parsedObj.query.ip
     client.eval(
         free, //lua source code
