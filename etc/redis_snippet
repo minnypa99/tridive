@@ -34,8 +34,8 @@ var reserve = 'local ip_arr = redis.call("ZPOPMIN", KEYS[1]) if table.getn(ip_ar
 
 var inuse = 'if redis.call("ZREM", KEYS[1], ARGV[2]) == 1 then return redis.call("ZADD", KEYS[2], ARGV[1], ARGV[2]) else return nil end';
 var free = 'if redis.call("ZREM", KEYS[1], ARGV[2]) == 1 then return redis.call("ZADD", KEYS[2], ARGV[1], ARGV[2]) else return nil end';
-var refresh = 'return redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", ARGV[1])';
-var ext_ip = '';
+var refresh = 'local ip_arr = redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", ARGV[1]) if table.getn(ip_arr) > 0 then redis.call("ZREMRANGEBYSCORE", KEYS[1], "-inf", ARGV[1]) return ip_arr else return {} end';
+
 
 
 ///////////// change to READY
@@ -127,21 +127,23 @@ http.get(options, function(res) {
 });
 
 
-  ///////// 21-10-01 check no-response vms in reserve state - REFRESH
+ ///////// 21-10-01 check no-response vms in reserve or inuse state - REFRESH
   app.get( '/refresh', (req, res) => {
-
+    var ip_arr = [];
+    var ip_arr1 = [];
+    var target_arr = [];
+    var tmp_arr = [];
     client.eval(
         refresh, //lua source code
         1, // one "key" to pass
         "reserve", // key of sortedset
-        milliseconds - 100000, // ARGV[1] - timestamp 100sec ago
+        milliseconds - 30000, // ARGV[1] - timestamp 30sec ago
         function(err, result) {
-            if( err || result == null){
-              console.log('get reserve err ' + err );
-		res.status(500).send('Fail to refresh VMs');
-            }else{
-               console.log('target in reserve are ::' + result );
-		const ip_arr = result.toString().split(",");
+            if( result != null){
+		if( result.toString().includes(".") )
+			ip_arr = result.toString().split(",");
+
+		console.log('reserve arr is ' + ip_arr );
 
 		client.eval(
 		   refresh,
@@ -149,25 +151,39 @@ http.get(options, function(res) {
 		   "inuse",
 		   milliseconds - 10800000,  // timestamp 3hours ago
 		   function(err, result1){
-		  	if( err || result1 == null ) {
-			   console.log('get inuse err ' + err);
-			   res.status(500).send('Fail to refresh VMs - inuse');
-			}else{
-			   console.log('target in inuse are :: ' + result1);
-			   const ip_arr1 = result1.toString().split(",");
+		  	if( result1 != null ) {
+
+			   if( result1.toString().includes(".") )
+				   ip_arr1 = result1.toString().split(",");
+			
+			   console.log('inuse arr is ' + ip_arr1 );
 			   
-			   const target_arr = ip_arr.concat(ip_arr1);
+			   const ip_arr2 = ip_arr.concat(ip_arr1);
 
-			   target_arr.forEach(function(element, index){
+			   if( ip_arr2.length > 0 ){
+			     ip_arr2.forEach(function(element, index){
 				console.log(index + ' ' + element );
-				// call VM delete function
-				// if success then remove IP from reserver, else move IP to garbage
-				//client.zrem("reserve", element );
-				//client.zadd("garbage", element );
-				//client.hdel("vminfo", element );
-			   });
+				client.hget("vminfo", element, function( err, result ){
+					console.log(element + ' vminfo : ' + result );
+					if( result.toString().includes(",") ){
+						tmp_arr = result.toString().split(",");
+						tmp_arr.unshift(element);
+						//console.log('vminfo array : ' + tmp_arr );
+						target_arr.push(tmp_arr);
+					}
+					
+				   if( index == ( ip_arr2.length -1 ) ){
+					console.log('target arr is ' + target_arr );
+					res.send(target_arr);
+				   }
+				});
 
-			   res.send('Success');
+			     });
+			   }else{
+				res.send(target_arr);
+			   }
+			
+			   //res.send(target_arr);
             		}
         	    }
       		);
