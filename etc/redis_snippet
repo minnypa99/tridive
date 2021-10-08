@@ -28,7 +28,8 @@ var vm_info = '';
 var timestamp = new Date();
 var milliseconds = timestamp.getTime();
 
-var ready = 'if redis.call("ZADD", KEYS[1], ARGV[1], ARGV[2]) >= 0 then return redis.call("HSET", KEYS[2], ARGV[2], ARGV[3]) else return nil end'  ;
+//var ready = 'if redis.call("ZADD", KEYS[1], ARGV[1], ARGV[2]) >= 0 then return redis.call("HSET", KEYS[2], ARGV[2], ARGV[3]) else return nil end'  ;
+var ready = 'if redis.call("ZADD", KEYS[1], ARGV[1], ARGV[2]) >= 0 then return redis.call("SETEX", KEYS[2], ARGV[4], ARGV[3]) else return nil end'  ;
 
 var reserve = 'local ip_arr = redis.call("ZPOPMIN", KEYS[1]) if table.getn(ip_arr) > 1 then local ip = table.remove(ip_arr, 1) if redis.call("ZADD", KEYS[2], ARGV[1], ip) == 1 then return ip else return nil end else return nil end';
 
@@ -41,7 +42,7 @@ var refresh = 'local ip_arr = redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", ARGV[
 ///////////// change to READY
 var options={
 	host: 'metadata',
-	path: '/computeMetadata/v1/instance/network-interfaces/0/external-ip',
+	path: '/computeMetadata/v1/instance/network-interfaces/0/ip',
 	method: 'GET',
   headers: {
     'Metadata-Flavor': 'Google'
@@ -104,10 +105,11 @@ http.get(options, function(res) {
 					ready, //lua source code
 					2, // one "key" to pass
 					"ready", // key of sortedset
-					"vminfo", // key of hash set
+					"vm:"+int_ip, // key ipaddr
 					milliseconds, // ARGV[1] score by timestamp
 					int_ip, // ARGV[2] external ip address
 					vm_info, // ARGV[3] proejct_id + zone + vm_name
+					3600*24*30, //ARGV[4] expire time - 30days for stage,  3 days for prod
 					function(err, res) {
 					  if( err || res == null){
 					    console.log('ready err ' + err );
@@ -162,10 +164,9 @@ http.get(options, function(res) {
 
 			   if( ip_arr2.length > 0 ){
 			     ip_arr2.forEach(function(element, index){
-				console.log(index + ' ' + element );
-				client.hget("vminfo", element, function( err, result ){
+					client.get("vm:"+element, function( err, result ){
 					console.log(element + ' vminfo : ' + result );
-					if( result.toString().includes(",") ){
+					if( result != null && result.toString().includes(",") ){
 						tmp_arr = result.toString().split(",");
 						tmp_arr.unshift(element);
 						//console.log('vminfo array : ' + tmp_arr );
