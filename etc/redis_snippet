@@ -134,7 +134,10 @@ http.get(options, function(res) {
     var ip_arr = [];
     var ip_arr1 = [];
     var target_arr = [];
-    var tmp_arr = [];
+    //var tmp_arr = [];
+    var timestamp = new Date();
+	var milliseconds = timestamp.getTime();
+	
     client.eval(
         refresh, //lua source code
         1, // one "key" to pass
@@ -166,6 +169,7 @@ http.get(options, function(res) {
 			     ip_arr2.forEach(function(element, index){
 					client.get("vm:"+element, function( err, result ){
 					console.log(element + ' vminfo : ' + result );
+					var tmp_arr = [];
 					if( result != null && result.toString().includes(",") ){
 						tmp_arr = result.toString().split(",");
 						tmp_arr.unshift(element);
