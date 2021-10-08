@@ -36,7 +36,7 @@ var reserve = 'local ip_arr = redis.call("ZPOPMIN", KEYS[1]) if table.getn(ip_ar
 var inuse = 'if redis.call("ZREM", KEYS[1], ARGV[2]) == 1 then return redis.call("ZADD", KEYS[2], ARGV[1], ARGV[2]) else return nil end';
 var free = 'if redis.call("ZREM", KEYS[1], ARGV[2]) == 1 then return redis.call("ZADD", KEYS[2], ARGV[1], ARGV[2]) else return nil end';
 var refresh = 'local ip_arr = redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", ARGV[1]) if table.getn(ip_arr) > 0 then redis.call("ZREMRANGEBYSCORE", KEYS[1], "-inf", ARGV[1]) return ip_arr else return {} end';
-
+var down = 'return redis.call("ZREM", KEYS[1], ARGV[1]) ';
 
 
 ///////////// change to READY
@@ -171,6 +171,9 @@ http.get(options, function(res) {
 						tmp_arr.unshift(element);
 						//console.log('vminfo array : ' + tmp_arr );
 						target_arr.push(tmp_arr);
+					}else{
+						tmp_arr.push(element);
+						target_arr.push(tmp_arr);
 					}
 					
 				   if( index == ( ip_arr2.length -1 ) ){
@@ -266,6 +269,29 @@ http.get(options, function(res) {
 		res.status(500).send('Fail to free VM');
             }else{
                console.log('free result ::' + parseInt(result) );
+		res.send('Success');
+            }
+        }
+      );
+
+  });
+  
+  
+    ///////////// 21-10-01 change vm status to down
+  app.get( '/down', (req, res) => {
+  	timestamp = new Date();
+	var parsedObj = url.parse(req.url, true);  //parsedObj.query.ip
+    client.eval(
+        down, //lua source code
+        1, // one "key" to pass
+	"inuse", // key of sortedset
+	parsedObj.query.ip,  // ARGV[2] ip address in query string
+        function(err, result) {
+            if( err || result == null ){
+              console.log('inuse err ' + err );
+		res.status(500).send('Fail to free VM');
+            }else{
+               console.log('down result ::' + parseInt(result) );
 		res.send('Success');
             }
         }
