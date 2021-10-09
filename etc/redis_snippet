@@ -40,6 +40,15 @@ var down = 'return redis.call("ZREM", KEYS[1], ARGV[1]) ';
 
 
 ///////////// change to READY
+var options_tag={
+	host: 'metadata',
+	path: '/computeMetadata/v1/instance/tags',
+	method: 'GET',
+  headers: {
+    'Metadata-Flavor': 'Google'
+  }
+}
+
 var options={
 	host: 'metadata',
 	path: '/computeMetadata/v1/instance/network-interfaces/0/ip',
