@@ -324,4 +324,23 @@ var options_zone={
       );
 
   });
+  
+  
+      ///////////// 21-10-01 change vm status to ready
+  app.get( '/readyvm', (req, res) => {
+  	var timestamp = new Date();
+	var milliseconds = timestamp.getTime();
+	var parsedObj = url.parse(req.url, true);  //parsedObj.query.ip
+    client.zadd( "ready", milliseconds, parsedObj.query.ip, function(err, res) {
+            if( err || result == null ){
+              console.log('ready err ' + err );
+		res.status(500).send('ready error');
+            }else{
+               console.log('ready success' );
+		res.send('Success');
+            }
+
+      });
+
+  });
 
