@@ -86,56 +86,65 @@ var options_zone={
 }
 
 ////  code snipet in constructor
+    //redis ready code
+    //
+     http.get(options_tag, function(res) {
+       res.on('data', function(chunk) { vm_tags += chunk; });
+       res.on('end', function() {   
+       console.log('vm_tags = ' + vm_tags);
 
-http.get(options, function(res) {
-  res.on('data', function(chunk) { int_ip += chunk; });
-  res.on('end', function() {
-        console.log('int_ip = ' + int_ip);
-	http.get(options_extip, function(res) {
-	  res.on('data', function(chunk) { ext_ip += chunk; });
-	  res.on('end', function(){ 
-		console.log('ext_ip = ' + ext_ip );
-		http.get(options_name, function(res) {
-		  res.on('data', function(chunk) { vm_name += chunk; });
-		  res.on('end', function(){ 
-			console.log('vm_name = ' + vm_name ); 
-			http.get(options_zone, function(res) {
-			  res.on('data', function(chunk) { zone_path += chunk; });
-			  res.on('end', function(){
-				var zone_arr = zone_path.split("/");
-				project_id = zone_arr[1];
-				zone = zone_arr[3];
-				console.log( 'project id is ' + project_id + ', zone is ' + zone );
-				vm_info = ext_ip + ',' + project_id + ',' + zone + ',' + vm_name;
-				
-				timestamp = new Date();
-				milliseconds = timestamp.getTime();
-				client.eval(
-					ready, //lua source code
-					2, // one "key" to pass
-					"ready", // key of sortedset
-					"vm:"+int_ip, // key ipaddr
-					milliseconds, // ARGV[1] score by timestamp
-					int_ip, // ARGV[2] external ip address
-					vm_info, // ARGV[3] proejct_id + zone + vm_name
-					3600*24*30, //ARGV[4] expire time - 30days for stage,  3 days for prod
-					function(err, res) {
-					  if( err || res == null){
-					    console.log('ready err ' + err );
-					    // return playImg
-					  }else{
-					    console.log('ready insert reply ::' + res );
-					  }
-					}
-				);
-			  });
-			});
-		  });
-		});
-	  });
-	});
-  });
-});
+     if (vm_tags.includes("t4streaming")) {
+       console.log("This is service vm, will register ip and vminfo to Redis!!");
+       http.get(options, function(res) {
+         res.on('data', function(chunk) { int_ip += chunk; });
+         res.on('end', function(){ 
+         console.log('int_ip = ' + int_ip );
+         http.get(options_name, function(res) {
+           res.on('data', function(chunk) { vm_name += chunk; });
+           res.on('end', function(){ 
+           console.log('vm_name = ' + vm_name ); 
+           http.get(options_zone, function(res) {
+             res.on('data', function(chunk) { zone_path += chunk; });
+             res.on('end', function(){
+             var zone_arr = zone_path.split("/");
+             project_id = zone_arr[1];
+             zone = zone_arr[3];
+             console.log( 'project id is ' + project_id + ', zone is ' + zone );
+             vm_info = project_id + ',' + zone + ',' + vm_name;
+     var timestamp = new Date();
+     var milliseconds = timestamp.getTime();    
+	setTimeout(function(){   //  wait 2 seconds for Unity connection
+             client.eval(
+               ready, //lua source code
+               2, // one "key" to pass
+               "ready", // key of sortedset
+               "vm:"+int_ip, // key ipaddr
+               milliseconds, // ARGV[1] score by timestamp
+               int_ip, // ARGV[2] external ip address
+               vm_info, // ARGV[3] proejct_id + zone + vm_name
+               3600*24*30, //ARGV[4] expire time - 30days for stage,  3 days for prod
+               function(err, res) {
+                 if( err || res == null){
+                   console.log('ready err ' + err );
+                   // return playImg
+                 }else{
+                   console.log('ready insert reply ::' + res );
+                 }
+               }
+             );
+   	}, 2000);
+
+             }); // res.on zone
+           }); // zone
+           }); // res.on vm name
+         }); //   vm name
+         });   // res.on intip
+       });  // int ip
+     }else {
+         console.log("This is not service vm, will not register vminfo!!");
+     }
+       }); // res.on tag
+     });  // tag
 
 
  ///////// 21-10-01 check no-response vms in reserve or inuse state - REFRESH
