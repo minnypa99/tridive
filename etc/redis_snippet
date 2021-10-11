@@ -120,7 +120,7 @@ var options_zone={
                "ready", // key of sortedset
                "vm:"+int_ip, // key ipaddr
                milliseconds, // ARGV[1] score by timestamp
-               int_ip, // ARGV[2] external ip address
+               int_ip, // ARGV[2] internal ip address
                vm_info, // ARGV[3] proejct_id + zone + vm_name
                3600*24*30, //ARGV[4] expire time - 30days for stage,  3 days for prod
                function(err, res) {
