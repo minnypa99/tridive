@@ -29,7 +29,7 @@ var timestamp = new Date();
 var milliseconds = timestamp.getTime();
 
 //var ready = 'if redis.call("ZADD", KEYS[1], ARGV[1], ARGV[2]) >= 0 then return redis.call("HSET", KEYS[2], ARGV[2], ARGV[3]) else return nil end'  ;
-var ready = 'if redis.call("ZADD", KEYS[1], ARGV[1], ARGV[2]) >= 0 then return redis.call("SETEX", KEYS[2], ARGV[4], ARGV[3]) else return nil end'  ;
+var ready = 'redis.call("ZREM", "reserve", ARGV[2]) redis.call("ZREM", "inuse", ARGV[2]) if redis.call("ZADD", KEYS[1], ARGV[1], ARGV[2]) >= 0 then return redis.call("SETEX", KEYS[2], ARGV[4], ARGV[3]) else return nil end';
 
 var reserve = 'local ip_arr = redis.call("ZPOPMIN", KEYS[1]) if table.getn(ip_arr) > 1 then local ip = table.remove(ip_arr, 1) if redis.call("ZADD", KEYS[2], ARGV[1], ip) == 1 then return ip else return nil end else return nil end';
 
