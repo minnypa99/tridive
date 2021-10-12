@@ -29,6 +29,7 @@ var zone_path = '';
 var project_id = '';
 var zone = '';
 var vm_info = '';
+var vm_tags = '';
 var timestamp = new Date();
 var milliseconds = timestamp.getTime();
 
@@ -201,11 +202,10 @@ const wsRemoteAddr: Map<WebSocket, string> = new Map<WebSocket, string>();    //
 		int_ip,  // ARGV[2] ip address in query string
 		function(err, result) {
 		    if( err || result == null ){
-		      console.log('inuse err ' + err );
-			res.status(500).send('Fail to free VM');
+		 
 		    }else{
 		       console.log('free result ::' + parseInt(result) );
-			res.send('Success');
+
 		    }
 		}
 	      );
