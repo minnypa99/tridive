@@ -90,8 +90,7 @@ var options_zone={
 }
 
 ////  code snipet in constructor
-    //redis ready code
-    //
+setTimeout(function(){   //  wait 2 seconds for Unity connection
      http.get(options_tag, function(res) {
        res.on('data', function(chunk) { vm_tags += chunk; });
        res.on('end', function() {   
@@ -117,7 +116,7 @@ var options_zone={
              vm_info = project_id + ',' + zone + ',' + vm_name;
      var timestamp = new Date();
      var milliseconds = timestamp.getTime();    
-	setTimeout(function(){   //  wait 2 seconds for Unity connection
+
              client.eval(
                ready, //lua source code
                2, // one "key" to pass
@@ -136,7 +135,6 @@ var options_zone={
                  }
                }
              );
-   	}, 2000);
 
              }); // res.on zone
            }); // zone
@@ -144,11 +142,77 @@ var options_zone={
          }); //   vm name
          });   // res.on intip
        });  // int ip
-     }else {
-         console.log("This is not service vm, will not register vminfo!!");
-     }
+      }else {
+           console.log("This is not service vm, will not register vminfo!!");
+      }
        }); // res.on tag
      });  // tag
+  }, 5000); // execute code after 5seconds
+
+
+
+// invoke free ip when browser socket close 
+const wsRemoteAddr: Map<WebSocket, string> = new Map<WebSocket, string>();    // store socket remote ip address
+
+    this.wss.on('connection', (ws: WebSocket, req) => {
+
+      if ( clients.size > 1 ){
+        console.log("socket connection already, exit  —————————————— ");
+        ws.close();
+        return;
+      }else{
+        console.log("this is new connection, proceed signaling process ——————————————");
+      }
+
+      
+	console.log('remoteAddress is ' + req.socket.remoteAddress );
+	wsRemoteAddr.set(ws, req.socket.remoteAddress);
+
+      clients.set(ws, new Set<string>());
+      
+      
+      ws.onclose = (_event: CloseEvent) => {
+	console.log('ws close :: ');
+	var remoteIp = wsRemoteAddr.get(ws));
+	console.log('ws remoteAddr is :: ' + remoteIp);
+
+        const connectionIds = clients.get(ws);
+        connectionIds.forEach(connectionId => {
+          connectionPair.delete(connectionId);
+          offers.delete(connectionId);
+          answers.delete(connectionId);
+        });
+
+        clients.delete(ws);
+        candidates.delete(ws);
+	wsRemoteAddr.delete(ws);
+
+	if( remoteIp != "127.0.0.1" ){
+		console.log('Browser socket was broken,  invoke /free ip !!' );
+
+	     var timestamp = new Date();
+	     var milliseconds = timestamp.getTime(); 
+	    client.eval(
+		free, //lua source code
+		2, // one "key" to pass
+		"inuse", // key of sortedset
+		"ready", // key of sortedset
+		milliseconds, // ARGV[1] - timestamp 
+		int_ip,  // ARGV[2] ip address in query string
+		function(err, result) {
+		    if( err || result == null ){
+		      console.log('inuse err ' + err );
+			res.status(500).send('Fail to free VM');
+		    }else{
+		       console.log('free result ::' + parseInt(result) );
+			res.send('Success');
+		    }
+		}
+	      );
+
+	}
+
+      }
 
 
  ///////// 21-10-01 check no-response vms in reserve or inuse state - REFRESH
