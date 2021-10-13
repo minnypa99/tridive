@@ -45,7 +45,7 @@ var inuse = 'if redis.call("ZREM", KEYS[1], ARGV[2]) == 1 then return redis.call
 var free = 'if redis.call("ZREM", KEYS[1], ARGV[2]) == 1 then return redis.call("ZADD", KEYS[2], ARGV[1], ARGV[2]) else return nil end';
 var refresh = 'local ip_arr = redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", ARGV[1]) if table.getn(ip_arr) > 0 then redis.call("ZREMRANGEBYSCORE", KEYS[1], "-inf", ARGV[1]) return ip_arr else return {} end';
 var down = 'return redis.call("ZREM", KEYS[1], ARGV[1]) ';
-
+var countall = 'local result = {} table.insert(result, redis.call("ZCARD", KEYS[1])) table.insert(result, redis.call("ZCARD", KEYS[2]))  table.insert(result, redis.call("ZCARD", KEYS[3]))  return result';
 
 ///////////// change to READY
 var options_tag={
@@ -394,7 +394,7 @@ const wsRemoteAddr: Map<WebSocket, string> = new Map<WebSocket, string>();    //
   
   
       ///////////// 21-10-01 change vm status to ready
-  app.get( '/readyvm', (req, res) => {
+  app.get( '/free1', (req, res) => {
   	var timestamp = new Date();
 	var milliseconds = timestamp.getTime();
 	var parsedObj = url.parse(req.url, true);  //parsedObj.query.ip
@@ -410,4 +410,26 @@ const wsRemoteAddr: Map<WebSocket, string> = new Map<WebSocket, string>();    //
       });
 
   });
+  
+  app.get( '/countall', (req, res) => {
+	var resultjson = {};
+     client.eval(
+       countall, //lua source code
+       3, // one "key" to pass
+       "ready", // key of sortedset
+       "reserve", // key of sortedset
+       "inuse", // key of sortedset
+       function(err, result) {
+         if( err || result == null ){
+           console.log('reserve err ' + err );
+           res.status(500).send('Fail');
+         }
+         else {
+           console.log('reserve ip ::' + result );
+	   var arr = result.toString().split(",");
+	   res.json({ ready: arr[0], reverse: arr[1], inuse: arr[2] });
+         }
+       }
+     );
+   });
 
