@@ -20,7 +20,10 @@ const url = require('url');
 const redishost = "10.32.63.19"
 const redisport = 6379
 const redis = require('redis');
-const client = redis.createClient(redisport, redishost);
+const client = redis.createClient(redisport, redishost, {connect_timeout:3000});
+ client.on("error", function(error) {
+  console.error(error);
+});
 
 var int_ip = '';
 var ext_ip = '';
@@ -126,7 +129,7 @@ setTimeout(function(){   //  wait 2 seconds for Unity connection
                milliseconds, // ARGV[1] score by timestamp
                int_ip, // ARGV[2] internal ip address
                vm_info, // ARGV[3] proejct_id + zone + vm_name
-               3600*24*30, //ARGV[4] expire time - 30days for stage,  3 days for prod
+               3600*24*7, //ARGV[4] expire time - 7days
                function(err, res) {
                  if( err || res == null){
                    console.log('ready err ' + err );
@@ -240,7 +243,7 @@ const wsRemoteAddr: Map<WebSocket, string> = new Map<WebSocket, string>();    //
 		   refresh,
 		   1,
 		   "inuse",
-		   milliseconds - 10800000,  // timestamp 3hours ago
+		   milliseconds - 7200000,  // timestamp 2hours ago
 		   function(err, result1){
 		  	if( result1 != null ) {
 
